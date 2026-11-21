@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public class TransactionIngestor {
 
-    private static final int MAX_LIMIT = 1000;
+    private static final int MAX_LIMIT = 50000;
     private final List<Transaction> transactions;
 
     public TransactionIngestor(final String pathName) {
