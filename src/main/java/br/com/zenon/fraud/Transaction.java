@@ -1,9 +1,10 @@
 package br.com.zenon.fraud;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 public record Transaction(
-        String step,
+        int step,
         TransactionType type,
         BigDecimal amount,
         Customer origin,
@@ -11,18 +12,49 @@ public record Transaction(
         boolean isFraud,
         boolean isFlaggedFraud
 ) {
+    public Transaction(int step, TransactionType type, BigDecimal amount, Customer origin, Customer destination, boolean isFraud, boolean isFlaggedFraud) {
+
+        if(step < 1)
+            throw new IllegalArgumentException("step should be positive: " + step);
+
+        validaCampos("type",type);
+        validaValor("amount",amount);
+        validaCampos("isFraud",isFraud);
+        validaCampos("isFlaggedFraud",isFlaggedFraud);
+
+        this.step = step;
+        this.type = type;
+        this.amount = amount;
+        this.origin = origin;
+        this.destination = destination;
+        this.isFraud = isFraud;
+        this.isFlaggedFraud = isFlaggedFraud;
+    }
 
     public Transaction(String step, TransactionType type, BigDecimal amount, Customer origin, Customer destination, String isFraud, String isFlaggedFraud) {
-        this(step, type, amount, origin, destination, parseFlag(isFraud), parseFlag(isFlaggedFraud));
+        validaCampos("step",step);
+        this(Integer.parseInt(step), type, amount, origin, destination, parseFlag(isFraud), parseFlag(isFlaggedFraud));
+    }
+
+    private static void validaCampos(final String field, Object value) {
+        Objects.requireNonNull(value, field+" should not be null");
+
+        if(value instanceof String && value.toString().isBlank())
+            throw new IllegalArgumentException(field + " should not be empty ");
+    }
+
+    private static void validaValor(String field, BigDecimal value) {
+        Objects.requireNonNull(value, field + " should not be null");
+
+        if (value.signum() < 0)
+            throw new IllegalArgumentException(field + " should be positive: " + value);
     }
 
     private static boolean parseFlag(String value) {
         return switch (value) {
             case "1" -> true;
             case "0" -> false;
-            default -> throw new IllegalArgumentException(
-                    "Valor inválido para indicador: " + value
-            );
+            default -> throw new IllegalArgumentException("Valor inválido para indicador: " + value);
         };
     }
 

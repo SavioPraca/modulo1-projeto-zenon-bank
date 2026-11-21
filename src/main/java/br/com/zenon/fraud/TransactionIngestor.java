@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class TransactionIngestor {
 
@@ -31,36 +32,40 @@ public class TransactionIngestor {
             int count = 0;
 
             while (count < MAX_LIMIT && (line = reader.readLine()) != null) {
-
                 if (line.isBlank())
                     continue;
 
-                final String[] columns = line.split(",",-1);
-                transactionList.add(montaTransaction(columns));
+                montaTransaction(line).ifPresent(transactionList::add);
                 count++;
             }
 
         } catch (IOException exception) {
-            throw new RuntimeException(exception);
+            throw new RuntimeException("ERRO: " + exception.getMessage());
         }
 
         return transactionList;
     }
 
-    private Transaction montaTransaction(final String[] coluna){
+    private Optional<Transaction> montaTransaction(final String line){
+        final String[] coluna = line.split(",",-1);
+        try {
+            final Customer origem = montaCustomer(coluna[3],coluna[4],coluna[5]);
+            final Customer destino = montaCustomer(coluna[6],coluna[7],coluna[8]);
 
-        final Customer origem = montaCustomer(coluna[3],coluna[4],coluna[5]);
-        final Customer destino = montaCustomer(coluna[6],coluna[7],coluna[8]);
+            return Optional.of(new Transaction(
+                    coluna[0],
+                    TransactionType.valueOf(coluna[1]),
+                    new BigDecimal(coluna[2]),
+                    origem,
+                    destino,
+                    coluna[9],
+                    coluna[10])
+            );
 
-        return new Transaction(
-                coluna[0],
-                TransactionType.valueOf(coluna[1]),
-                new BigDecimal(coluna[2]),
-                origem,
-                destino,
-                coluna[9],
-                coluna[10]
-        );
+        } catch (RuntimeException e) {
+            System.err.println("ERRO: " + line + " | " + e );
+            return Optional.empty();
+        }
     }
 
     private Customer montaCustomer(final String name, final String oldBalance, final String newBalance){
